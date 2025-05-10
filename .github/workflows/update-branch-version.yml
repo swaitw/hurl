@@ -77,9 +77,8 @@ jobs:
             done
           done
 
-      - name: Cargo update
-        run: |
-          ./bin/update_crates.sh
+      - name: Cargo lock update
+        run: cargo update hurl hurlfmt hurl_core
 
       - name: Update man
         run: |

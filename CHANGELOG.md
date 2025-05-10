@@ -1,3 +1,34 @@
+[7.0.0 (TBD)](https://github.com/Orange-OpenSource/hurl/blob/master/CHANGELOG.md#7.0.0)
+========================================================================================================================
+
+Thanks to
+[@ecolinet](https://github.com/ecolinet),
+[@theoforger](https://github.com/theoforger),
+[@Muntaner](https://github.com/Muntaner),
+[@ashishajr](https://github.com/ashishajr),
+[@benkio](https://github.com/benkio),
+[@dhth](https://github.com/dhth),
+[@verigak](https://github.com/verigak),
+[@lambrospetrou](https://github.com/lambrospetrou),
+[@nfj25](https://github.com/nfj25),
+[@nwellnhof](https://github.com/nwellnhof),
+
+Enhancements:
+
+* Add query for HTTP redirects [#922](https://github.com/Orange-OpenSource/hurl/issues/922)
+* Add urlQueryParam filter [#2199](https://github.com/Orange-OpenSource/hurl/issues/2199)
+* Add base64 url safe encode and decode filters [#3840](https://github.com/Orange-OpenSource/hurl/issues/3840)
+* Show hurl --help with color [#3882](https://github.com/Orange-OpenSource/hurl/issues/3882)
+
+
+Bugs Fixed:
+
+* Parse verbose flag in curl command [#3760](https://github.com/Orange-OpenSource/hurl/issues/3760)
+* Keep secret value forever, even if a secret variable override an existing one [#3898](https://github.com/Orange-OpenSource/hurl/issues/3898)
+* Parse cookie Expires date attribute with '-' [#3956](https://github.com/Orange-OpenSource/hurl/issues/3956)
+* Replace deprecated libxml2 initGenericErrorDefaultFunc with xmlSetGenericErrorFunc [#3975](https://github.com/Orange-OpenSource/hurl/issues/3975)
+
+
 [6.1.1 (2025-03-19)](https://github.com/Orange-OpenSource/hurl/blob/master/CHANGELOG.md#6.1.1)
 ========================================================================================================================
 
