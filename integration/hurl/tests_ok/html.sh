@@ -9,21 +9,21 @@ hurl --ipv4 --test \
 
 hurl --ipv4 --test \
   --report-html build/a/b/c/ \
-  tests_ok/assert_body.hurl \
-  tests_ok/assert_header.hurl \
-  tests_ok/assert_json.hurl \
-  tests_ok/assert_match.hurl \
-  tests_ok/assert_regex.hurl \
-  tests_ok/assert_status_code.hurl \
-  tests_ok/assert_xpath.hurl \
-  tests_ok/bytes.hurl \
-  tests_ok/bytes_empty.hurl \
-  tests_ok/captures.hurl \
-  tests_ok/charset.hurl \
-  tests_ok/compressed_option.hurl \
-  tests_ok/cookie_storage.hurl \
-  tests_ok/empty.hurl \
-  tests_ok/encoding.hurl \
+  tests_ok/assert/assert_body.hurl \
+  tests_ok/assert/assert_header.hurl \
+  tests_ok/assert/assert_json.hurl \
+  tests_ok/assert/assert_match.hurl \
+  tests_ok/assert/assert_regex.hurl \
+  tests_ok/assert/assert_status_code.hurl \
+  tests_ok/assert/assert_xpath.hurl \
+  tests_ok/bytes/bytes.hurl \
+  tests_ok/bytes/bytes_empty.hurl \
+  tests_ok/captures/captures.hurl \
+  tests_ok/charset/charset.hurl \
+  tests_ok/compressed/compressed_option.hurl \
+  tests_ok/cookie/cookie_storage.hurl \
+  tests_ok/empty/empty.hurl \
+  tests_ok/encoding/encoding.hurl \
   tests_ok/expect.hurl \
   tests_ok/filter.hurl \
   tests_ok/float.hurl \
@@ -36,7 +36,7 @@ hurl --ipv4 --test \
   tests_ok/headers.hurl \
   tests_ok/hello.hurl \
   tests_ok/hello_gb2312.hurl \
-  tests_ok/http_version_option.hurl \
+  tests_ok/http_version/http_version_option.hurl \
   tests_ok/insecure_option.hurl \
   tests_ok/json_output.hurl \
   tests_ok/method.hurl \

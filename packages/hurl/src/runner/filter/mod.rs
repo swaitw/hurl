@@ -33,12 +33,15 @@ mod format;
 mod html_escape;
 mod html_unescape;
 mod jsonpath;
+
+mod location;
 mod nth;
 mod regex;
 mod replace;
 mod split;
 mod to_date;
 mod to_float;
+mod to_hex;
 mod to_int;
 mod to_string;
 mod url_decode;

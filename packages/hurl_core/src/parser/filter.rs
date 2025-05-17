@@ -65,12 +65,14 @@ pub fn filter(reader: &mut Reader) -> ParseResult<Filter> {
             html_decode_filter,
             html_encode_filter,
             jsonpath_filter,
+            location_filter,
             nth_filter,
             regex_filter,
             replace_filter,
             split_filter,
             to_date_filter,
             to_float_filter,
+            to_hex_filter,
             to_int_filter,
             to_string_filter,
             url_decode_filter,
@@ -164,6 +166,11 @@ fn jsonpath_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     Ok(FilterValue::JsonPath { space0, expr })
 }
 
+fn location_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("location", reader)?;
+    Ok(FilterValue::Location)
+}
+
 fn nth_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("nth", reader)?;
     let space0 = one_or_more_spaces(reader)?;
@@ -209,6 +216,11 @@ fn to_date_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
 fn to_float_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("toFloat", reader)?;
     Ok(FilterValue::ToFloat)
+}
+
+fn to_hex_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("toHex", reader)?;
+    Ok(FilterValue::ToHex)
 }
 
 fn to_int_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
