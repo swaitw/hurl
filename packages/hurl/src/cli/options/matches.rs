@@ -100,7 +100,7 @@ pub fn compressed(arg_matches: &ArgMatches) -> bool {
 }
 
 pub fn connect_timeout(arg_matches: &ArgMatches) -> Result<Duration, CliOptionsError> {
-    let s = get::<String>(arg_matches, "connect_timeout").unwrap_or_default();
+    let s = get::<String>(arg_matches, "connect_timeout").unwrap_or("300".to_string());
     get_duration(&s, DurationUnit::Second)
 }
 
@@ -125,15 +125,15 @@ pub fn curl_file(arg_matches: &ArgMatches) -> Option<PathBuf> {
 }
 
 pub fn delay(arg_matches: &ArgMatches) -> Result<Duration, CliOptionsError> {
-    let s = get::<String>(arg_matches, "delay").unwrap_or_default();
+    let s = get::<String>(arg_matches, "delay").unwrap_or("0".to_string());
     get_duration(&s, DurationUnit::MilliSecond)
 }
 
 pub fn error_format(arg_matches: &ArgMatches) -> ErrorFormat {
-    let error_format = get::<String>(arg_matches, "error_format");
-    match error_format.as_deref() {
-        Some("long") => ErrorFormat::Long,
-        Some("short") => ErrorFormat::Short,
+    let error_format = get::<String>(arg_matches, "error_format").unwrap_or("short".to_string());
+    match error_format.as_str() {
+        "long" => ErrorFormat::Long,
+        "short" => ErrorFormat::Short,
         _ => ErrorFormat::Short,
     }
 }
@@ -291,7 +291,7 @@ pub fn max_filesize(arg_matches: &ArgMatches) -> Option<u64> {
 }
 
 pub fn max_redirect(arg_matches: &ArgMatches) -> Count {
-    match get::<i32>(arg_matches, "max_redirects").unwrap() {
+    match get::<i32>(arg_matches, "max_redirects").unwrap_or(50) {
         -1 => Count::Infinite,
         m => Count::Finite(m as usize),
     }
@@ -373,8 +373,20 @@ pub fn path_as_is(arg_matches: &ArgMatches) -> bool {
     has_flag(arg_matches, "path_as_is")
 }
 
+pub fn pinned_pub_key(arg_matches: &ArgMatches) -> Option<String> {
+    get::<String>(arg_matches, "pinned_pub_key")
+}
+
 pub fn progress_bar(arg_matches: &ArgMatches) -> bool {
-    test(arg_matches) && !interactive(arg_matches) && !is_ci() && io::stderr().is_terminal()
+    // The test progress bar is displayed only for in test mode, for interactive TTYs.
+    // It can be forced by `--progress-bar` option.
+    if !test(arg_matches) {
+        return false;
+    }
+    if has_flag(arg_matches, "progress_bar") {
+        return true;
+    }
+    io::stderr().is_terminal() && !is_ci()
 }
 
 pub fn proxy(arg_matches: &ArgMatches) -> Option<String> {
@@ -402,7 +414,7 @@ pub fn retry(arg_matches: &ArgMatches) -> Option<Count> {
 }
 
 pub fn retry_interval(arg_matches: &ArgMatches) -> Result<Duration, CliOptionsError> {
-    let s = get::<String>(arg_matches, "retry_interval").unwrap_or_default();
+    let s = get::<String>(arg_matches, "retry_interval").unwrap_or("1000".to_string());
     get_duration(&s, DurationUnit::MilliSecond)
 }
 
@@ -441,7 +453,7 @@ pub fn test(arg_matches: &ArgMatches) -> bool {
 }
 
 pub fn timeout(arg_matches: &ArgMatches) -> Result<Duration, CliOptionsError> {
-    let s = get::<String>(arg_matches, "max_time").unwrap_or_default();
+    let s = get::<String>(arg_matches, "max_time").unwrap_or("300".to_string());
     get_duration(&s, DurationUnit::Second)
 }
 

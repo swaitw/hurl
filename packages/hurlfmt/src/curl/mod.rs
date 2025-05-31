@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-
+use regex;
 use std::fmt;
 
 mod args;
@@ -222,6 +222,15 @@ Empty-Header:
         assert_eq!(
             parse_line("curl http://localhost:8000/empty-headers -H 'Empty-Header;'").unwrap(),
             hurl_str
+        );
+    }
+
+    #[test]
+    fn test_illegal_header() {
+        assert!(
+            parse_line("curl http://localhost:8000/illegal-header -H 'Illegal-Header'")
+                .unwrap_err()
+                .contains("headers must be formatted as '<NAME:VALUE>' or '<NAME>;'")
         );
     }
 

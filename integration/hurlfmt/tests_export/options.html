@@ -23,11 +23,13 @@
 <span class="line"><span class="string">ipv6</span>: <span class="boolean">false</span></span>
 <span class="line"><span class="string">limit-rate</span>: <span class="number">1000</span></span>
 <span class="line"><span class="string">max-redirs</span>: <span class="number">10</span></span>
+<span class="line"><span class="string">max-time</span>: <span class="number">100</span><span class="unit">s</span></span>
 <span class="line"><span class="string">netrc</span>: <span class="boolean">false</span></span>
 <span class="line"><span class="string">netrc-file</span>: <span class="filename">netrcfile</span></span>
 <span class="line"><span class="string">netrc-optional</span>: <span class="boolean">false</span></span>
 <span class="line"><span class="string">output</span>: <span class="filename">output.txt</span></span>
 <span class="line"><span class="string">path-as-is</span>: <span class="boolean">false</span></span>
+<span class="line"><span class="string">pinnedpubkey</span>: <span class="string">pinnedpubkeyfile</span></span>
 <span class="line"><span class="string">proxy</span>: <span class="string">http://proxy.example</span></span>
 <span class="line"><span class="string">repeat</span>: <span class="number">-1</span></span>
 <span class="line"><span class="string">repeat</span>: <span class="number">5</span></span>
@@ -72,11 +74,13 @@
 <span class="line"><span class="string">ipv6</span>: <span class="expr">{{ipv6}}</span></span>
 <span class="line"><span class="string">limit-rate</span>: <span class="expr">{{limit-rate}}</span></span>
 <span class="line"><span class="string">max-redirs</span>: <span class="expr">{{max-redirs}}</span></span>
+<span class="line"><span class="string">max-time</span>: <span class="expr">{{max-time}}</span></span>
 <span class="line"><span class="string">netrc</span>: <span class="expr">{{netrc}}</span></span>
 <span class="line"><span class="string">netrc-file</span>: <span class="filename">{{netrc-file}}</span></span>
 <span class="line"><span class="string">netrc-optional</span>: <span class="expr">{{netrc-optional}}</span></span>
 <span class="line"><span class="string">output</span>: <span class="filename">{{output}}</span></span>
 <span class="line"><span class="string">path-as-is</span>: <span class="expr">{{path-as-is}}</span></span>
+<span class="line"><span class="string">pinnedpubkey</span>: <span class="string">{{pinnedpubkey}}</span></span>
 <span class="line"><span class="string">proxy</span>: <span class="string">{{proxy}}</span></span>
 <span class="line"><span class="string">repeat</span>: <span class="expr">{{repeat}}</span></span>
 <span class="line"><span class="string">resolve</span>: <span class="string">{{resolve}}</span></span>
@@ -85,7 +89,7 @@
 <span class="line"><span class="string">skip</span>: <span class="expr">{{skip}}</span></span>
 <span class="line"><span class="string">unix-socket</span>: <span class="string">{{socket-file}}</span></span>
 <span class="line"><span class="string">user</span>: <span class="string">{{user}}</span></span>
-<span class="line"></span><span class="comment">#variable: {{variable}}     NOT SUPPORTED YET</span>
+<span class="line"><span class="comment">#variable: {{variable}}     NOT SUPPORTED YET</span></span>
 <span class="line"><span class="string">verbose</span>: <span class="expr">{{verbose}}</span></span>
 <span class="line"><span class="string">very-verbose</span>: <span class="expr">{{very-verbose}}</span></span>
 </span></span></code></pre>

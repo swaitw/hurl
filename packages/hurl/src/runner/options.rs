@@ -200,6 +200,11 @@ pub fn get_entry_options(
                         let value = eval_count_option(value, variables)?;
                         entry_options.max_redirect = value;
                     }
+                    OptionKind::MaxTime(value) => {
+                        let value =
+                            eval_duration_option(value, variables, DurationUnit::MilliSecond)?;
+                        entry_options.timeout = value;
+                    }
                     OptionKind::NetRc(value) => {
                         let value = eval_boolean_option(value, variables)?;
                         entry_options.netrc = value;
@@ -220,6 +225,10 @@ pub fn get_entry_options(
                     OptionKind::PathAsIs(value) => {
                         let value = eval_boolean_option(value, variables)?;
                         entry_options.path_as_is = value;
+                    }
+                    OptionKind::PinnedPublicKey(value) => {
+                        let value = eval_template(value, variables)?;
+                        entry_options.pinned_pub_key = Some(value);
                     }
                     OptionKind::Proxy(value) => {
                         let value = eval_template(value, variables)?;

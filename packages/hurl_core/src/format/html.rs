@@ -19,12 +19,12 @@ use std::fmt::Display;
 
 use crate::ast::{
     Assert, Base64, Body, BooleanOption, Bytes, Capture, CertificateAttributeName, Comment, Cookie,
-    CookieAttribute, CookiePath, CountOption, DurationOption, Entry, EntryOption, File, FileParam,
-    FileValue, Filter, FilterValue, Hex, HurlFile, JsonValue, KeyValue, LineTerminator, Method,
-    MultilineString, MultipartParam, NaturalOption, OptionKind, Placeholder, Predicate,
-    PredicateFunc, PredicateFuncValue, PredicateValue, Query, QueryValue, Regex, RegexValue,
-    Request, Response, Section, SectionValue, Status, Template, VariableDefinition, VariableValue,
-    Version, Whitespace,
+    CookieAttribute, CookiePath, CountOption, DurationOption, Entry, EntryOption, File,
+    FilenameParam, FilenameValue, Filter, FilterValue, Hex, HurlFile, JsonValue, KeyValue,
+    LineTerminator, Method, MultilineString, MultipartParam, NaturalOption, OptionKind,
+    Placeholder, Predicate, PredicateFunc, PredicateFuncValue, PredicateValue, Query, QueryValue,
+    Regex, RegexValue, Request, Response, Section, SectionValue, Status, Template,
+    VariableDefinition, VariableValue, Version, Whitespace,
 };
 use crate::typing::{Count, ToSource};
 
@@ -129,7 +129,6 @@ impl HtmlFormatter {
         self.fmt_space(&request.space1);
         let url = escape_xml(request.url.to_source().as_str());
         self.fmt_span("url", &url);
-        self.fmt_span_close();
         self.fmt_lt(&request.line_terminator0);
         request.headers.iter().for_each(|h| self.fmt_kv(h));
         request.sections.iter().for_each(|s| self.fmt_section(s));
@@ -147,7 +146,6 @@ impl HtmlFormatter {
         self.fmt_version(&response.version);
         self.fmt_space(&response.space1);
         self.fmt_status(&response.status);
-        self.fmt_span_close();
         self.fmt_lt(&response.line_terminator0);
         response.headers.iter().for_each(|h| self.fmt_kv(h));
         response.sections.iter().for_each(|s| self.fmt_section(s));
@@ -175,7 +173,6 @@ impl HtmlFormatter {
         self.fmt_span_open("line");
         let name = format!("[{}]", section.identifier());
         self.fmt_span("section-header", &name);
-        self.fmt_span_close();
         self.fmt_lt(&section.line_terminator0);
         self.fmt_section_value(&section.value);
     }
@@ -210,7 +207,6 @@ impl HtmlFormatter {
         self.buffer.push(':');
         self.fmt_space(&kv.space2);
         self.fmt_template(&kv.value);
-        self.fmt_span_close();
         self.fmt_lt(&kv.line_terminator0);
     }
 
@@ -243,11 +239,13 @@ impl HtmlFormatter {
             OptionKind::IpV6(value) => self.fmt_bool_option(value),
             OptionKind::LimitRate(value) => self.fmt_natural_option(value),
             OptionKind::MaxRedirect(value) => self.fmt_count_option(value),
+            OptionKind::MaxTime(value) => self.fmt_duration_option(value),
             OptionKind::NetRc(value) => self.fmt_bool_option(value),
             OptionKind::NetRcFile(filename) => self.fmt_filename(filename),
             OptionKind::NetRcOptional(value) => self.fmt_bool_option(value),
             OptionKind::Output(filename) => self.fmt_filename(filename),
             OptionKind::PathAsIs(value) => self.fmt_bool_option(value),
+            OptionKind::PinnedPublicKey(value) => self.fmt_template(value),
             OptionKind::Proxy(value) => self.fmt_template(value),
             OptionKind::Repeat(value) => self.fmt_count_option(value),
             OptionKind::Resolve(value) => self.fmt_template(value),
@@ -260,7 +258,6 @@ impl HtmlFormatter {
             OptionKind::Verbose(value) => self.fmt_bool_option(value),
             OptionKind::VeryVerbose(value) => self.fmt_bool_option(value),
         };
-        self.fmt_span_close();
         self.fmt_lt(&option.line_terminator0);
     }
 
@@ -298,11 +295,11 @@ impl HtmlFormatter {
     fn fmt_multipart_param(&mut self, param: &MultipartParam) {
         match param {
             MultipartParam::Param(param) => self.fmt_kv(param),
-            MultipartParam::FileParam(param) => self.fmt_file_param(param),
+            MultipartParam::FilenameParam(param) => self.fmt_file_param(param),
         };
     }
 
-    fn fmt_file_param(&mut self, param: &FileParam) {
+    fn fmt_file_param(&mut self, param: &FilenameParam) {
         self.fmt_lts(&param.line_terminators);
         self.fmt_span_open("line");
         self.fmt_space(&param.space0);
@@ -311,11 +308,10 @@ impl HtmlFormatter {
         self.buffer.push(':');
         self.fmt_space(&param.space2);
         self.fmt_file_value(&param.value);
-        self.fmt_span_close();
         self.fmt_lt(&param.line_terminator0);
     }
 
-    fn fmt_file_value(&mut self, file_value: &FileValue) {
+    fn fmt_file_value(&mut self, file_value: &FilenameValue) {
         self.buffer.push_str("file,");
         self.fmt_space(&file_value.space0);
         self.fmt_filename(&file_value.filename);
@@ -343,7 +339,6 @@ impl HtmlFormatter {
         self.buffer.push(':');
         self.fmt_space(&cookie.space2);
         self.fmt_template(&cookie.value);
-        self.fmt_span_close();
         self.fmt_lt(&cookie.line_terminator0);
     }
 
@@ -364,7 +359,6 @@ impl HtmlFormatter {
         if capture.redact {
             self.fmt_string("redact");
         }
-        self.fmt_span_close();
         self.fmt_lt(&capture.line_terminator0);
     }
 
@@ -465,7 +459,6 @@ impl HtmlFormatter {
         }
         self.fmt_space(&assert.space1);
         self.fmt_predicate(&assert.predicate);
-        self.fmt_span_close();
         self.fmt_lt(&assert.line_terminator0);
     }
 
@@ -597,7 +590,12 @@ impl HtmlFormatter {
         self.fmt_lts(&body.line_terminators);
         self.fmt_space(&body.space0);
         self.fmt_bytes(&body.value);
-        self.fmt_lt(&body.line_terminator0);
+        let lt = &body.line_terminator0;
+        self.fmt_space(&lt.space0);
+        if let Some(v) = &lt.comment {
+            self.fmt_comment(v);
+        }
+        self.buffer.push_str(lt.newline.as_str());
     }
 
     fn fmt_bytes(&mut self, bytes: &Bytes) {
@@ -690,6 +688,7 @@ impl HtmlFormatter {
         if let Some(v) = &lt.comment {
             self.fmt_comment(v);
         }
+        self.fmt_span_close();
         self.buffer.push_str(lt.newline.as_str());
     }
 
@@ -797,9 +796,13 @@ impl HtmlFormatter {
             | FilterValue::Count
             | FilterValue::DaysAfterNow
             | FilterValue::DaysBeforeNow
+            | FilterValue::First
             | FilterValue::HtmlEscape
             | FilterValue::HtmlUnescape
+            | FilterValue::Last
+            | FilterValue::Location
             | FilterValue::ToFloat
+            | FilterValue::ToHex
             | FilterValue::ToInt
             | FilterValue::ToString
             | FilterValue::UrlDecode
@@ -808,13 +811,16 @@ impl HtmlFormatter {
     }
 
     fn fmt_lts(&mut self, line_terminators: &[LineTerminator]) {
-        for line_terminator in line_terminators {
+        for lt in line_terminators {
             self.fmt_span_open("line");
-            if line_terminator.newline.value.is_empty() {
-                self.buffer.push_str("<br />");
+            self.fmt_space(&lt.space0);
+            if let Some(v) = &lt.comment {
+                self.fmt_comment(v);
             }
             self.fmt_span_close();
-            self.fmt_lt(line_terminator);
+            if !lt.newline.value.is_empty() {
+                self.buffer.push_str(lt.newline.as_str());
+            }
         }
     }
 }

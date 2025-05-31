@@ -25,16 +25,20 @@ use crate::runner::filter::count::eval_count;
 use crate::runner::filter::days_after_now::eval_days_after_now;
 use crate::runner::filter::days_before_now::eval_days_before_now;
 use crate::runner::filter::decode::eval_decode;
+use crate::runner::filter::first::eval_first;
 use crate::runner::filter::format::eval_format;
 use crate::runner::filter::html_escape::eval_html_escape;
 use crate::runner::filter::html_unescape::eval_html_unescape;
 use crate::runner::filter::jsonpath::eval_jsonpath;
+use crate::runner::filter::last::eval_last;
+use crate::runner::filter::location::eval_location;
 use crate::runner::filter::nth::eval_nth;
 use crate::runner::filter::regex::eval_regex;
 use crate::runner::filter::replace::eval_replace;
 use crate::runner::filter::split::eval_split;
 use crate::runner::filter::to_date::eval_to_date;
 use crate::runner::filter::to_float::eval_to_float;
+use crate::runner::filter::to_hex::eval_to_hex;
 use crate::runner::filter::to_int::eval_to_int;
 use crate::runner::filter::to_string::eval_to_string;
 use crate::runner::filter::url_decode::eval_url_decode;
@@ -88,6 +92,7 @@ pub fn eval_filter(
         FilterValue::Decode { encoding, .. } => {
             eval_decode(value, encoding, variables, filter.source_info, in_assert)
         }
+        FilterValue::First => eval_first(value, filter.source_info, in_assert),
         FilterValue::Format { fmt, .. } => {
             eval_format(value, fmt, variables, filter.source_info, in_assert)
         }
@@ -96,10 +101,12 @@ pub fn eval_filter(
         FilterValue::JsonPath { expr, .. } => {
             eval_jsonpath(value, expr, variables, filter.source_info, in_assert)
         }
+        FilterValue::Last => eval_last(value, filter.source_info, in_assert),
+        FilterValue::Location => eval_location(value, filter.source_info, in_assert),
         FilterValue::Regex {
             value: regex_value, ..
         } => eval_regex(value, regex_value, variables, filter.source_info, in_assert),
-        FilterValue::Nth { n, .. } => eval_nth(value, filter.source_info, in_assert, n.as_u64()),
+        FilterValue::Nth { n, .. } => eval_nth(value, filter.source_info, in_assert, n.as_i64()),
         FilterValue::Replace {
             old_value,
             new_value,
@@ -119,6 +126,7 @@ pub fn eval_filter(
             eval_to_date(value, fmt, variables, filter.source_info, in_assert)
         }
         FilterValue::ToFloat => eval_to_float(value, filter.source_info, in_assert),
+        FilterValue::ToHex => eval_to_hex(value, filter.source_info, in_assert),
         FilterValue::ToInt => eval_to_int(value, filter.source_info, in_assert),
         FilterValue::ToString => eval_to_string(value, filter.source_info, in_assert),
         FilterValue::UrlDecode => eval_url_decode(value, filter.source_info, in_assert),
