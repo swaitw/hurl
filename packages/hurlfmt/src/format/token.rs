@@ -18,8 +18,8 @@
 use hurl_core::ast::{
     Assert, Base64, Body, BooleanOption, Bytes, Capture, CertificateAttributeName, Comment, Cookie,
     CookieAttribute, CookiePath, CountOption, DurationOption, Entry, EntryOption, Expr, ExprKind,
-    File, FileParam, FileValue, Filter, FilterValue, Function, GraphQl, GraphQlVariables, Hex,
-    HurlFile, JsonListElement, JsonObjectElement, JsonValue, KeyValue, LineTerminator, Method,
+    File, FilenameParam, FilenameValue, Filter, FilterValue, Function, GraphQl, GraphQlVariables,
+    Hex, HurlFile, JsonListElement, JsonObjectElement, JsonValue, KeyValue, LineTerminator, Method,
     MultilineString, MultilineStringAttribute, MultilineStringKind, MultipartParam, NaturalOption,
     OptionKind, Placeholder, Predicate, PredicateFunc, PredicateFuncValue, PredicateValue, Query,
     QueryValue, Regex, RegexValue, Request, Response, Section, SectionValue, Status, StatusValue,
@@ -300,12 +300,12 @@ impl Tokenizable for MultipartParam {
     fn tokenize(&self) -> Vec<Token> {
         match self {
             MultipartParam::Param(key_value) => key_value.tokenize(),
-            MultipartParam::FileParam(file_param) => file_param.tokenize(),
+            MultipartParam::FilenameParam(file_param) => file_param.tokenize(),
         }
     }
 }
 
-impl Tokenizable for FileParam {
+impl Tokenizable for FilenameParam {
     fn tokenize(&self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
         tokens.append(&mut self.space0.tokenize());
@@ -319,7 +319,7 @@ impl Tokenizable for FileParam {
     }
 }
 
-impl Tokenizable for FileValue {
+impl Tokenizable for FilenameValue {
     fn tokenize(&self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![Token::Keyword("file,".to_string())];
         tokens.append(&mut self.space0.tokenize());
@@ -915,11 +915,13 @@ impl Tokenizable for OptionKind {
             OptionKind::IpV6(value) => value.tokenize(),
             OptionKind::LimitRate(value) => value.tokenize(),
             OptionKind::MaxRedirect(value) => value.tokenize(),
+            OptionKind::MaxTime(value) => value.tokenize(),
             OptionKind::NetRc(value) => value.tokenize(),
             OptionKind::NetRcFile(filename) => filename.tokenize(),
             OptionKind::NetRcOptional(value) => value.tokenize(),
             OptionKind::Output(filename) => filename.tokenize(),
             OptionKind::PathAsIs(value) => value.tokenize(),
+            OptionKind::PinnedPublicKey(value) => value.tokenize(),
             OptionKind::Proxy(value) => value.tokenize(),
             OptionKind::Repeat(value) => value.tokenize(),
             OptionKind::Resolve(value) => value.tokenize(),
@@ -1059,6 +1061,17 @@ impl Tokenizable for Filter {
                 tokens.append(&mut space1.tokenize());
                 tokens.append(&mut new_value.tokenize());
             }
+            FilterValue::ReplaceRegex {
+                space0,
+                pattern,
+                space1,
+                new_value,
+            } => {
+                tokens.append(&mut space0.tokenize());
+                tokens.append(&mut pattern.tokenize());
+                tokens.append(&mut space1.tokenize());
+                tokens.append(&mut new_value.tokenize());
+            }
             FilterValue::Split { space0, sep } => {
                 tokens.append(&mut space0.tokenize());
                 tokens.append(&mut sep.tokenize());
@@ -1075,7 +1088,24 @@ impl Tokenizable for Filter {
                 tokens.append(&mut space0.tokenize());
                 tokens.append(&mut expr.tokenize());
             }
-            _ => {}
+            FilterValue::Base64Decode
+            | FilterValue::Base64Encode
+            | FilterValue::Base64UrlSafeDecode
+            | FilterValue::Base64UrlSafeEncode
+            | FilterValue::Count
+            | FilterValue::DaysAfterNow
+            | FilterValue::DaysBeforeNow
+            | FilterValue::First
+            | FilterValue::HtmlEscape
+            | FilterValue::HtmlUnescape
+            | FilterValue::Last
+            | FilterValue::Location
+            | FilterValue::ToFloat
+            | FilterValue::ToHex
+            | FilterValue::ToInt
+            | FilterValue::ToString
+            | FilterValue::UrlDecode
+            | FilterValue::UrlEncode => {}
         }
         tokens
     }

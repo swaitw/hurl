@@ -17,7 +17,7 @@
  */
 use crate::ast::{Filter, FilterValue, SourceInfo, Whitespace};
 use crate::combinator::{choice, ParseError as ParseErrorTrait};
-use crate::parser::number::natural;
+use crate::parser::number::integer;
 use crate::parser::primitives::{one_or_more_spaces, try_literal, zero_or_more_spaces};
 use crate::parser::query::regex_value;
 use crate::parser::string::quoted_template;
@@ -61,16 +61,21 @@ pub fn filter(reader: &mut Reader) -> ParseResult<Filter> {
             days_after_now_filter,
             days_before_now_filter,
             decode_filter,
+            first_filter,
             format_filter,
             html_decode_filter,
             html_encode_filter,
             jsonpath_filter,
+            last_filter,
+            location_filter,
             nth_filter,
             regex_filter,
+            replace_regex_filter,
             replace_filter,
             split_filter,
             to_date_filter,
             to_float_filter,
+            to_hex_filter,
             to_int_filter,
             to_string_filter,
             url_decode_filter,
@@ -140,6 +145,11 @@ fn decode_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     Ok(FilterValue::Decode { space0, encoding })
 }
 
+fn first_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("first", reader)?;
+    Ok(FilterValue::First)
+}
+
 fn format_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("format", reader)?;
     let space0 = one_or_more_spaces(reader)?;
@@ -164,10 +174,20 @@ fn jsonpath_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     Ok(FilterValue::JsonPath { space0, expr })
 }
 
+fn last_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("last", reader)?;
+    Ok(FilterValue::Last)
+}
+
+fn location_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("location", reader)?;
+    Ok(FilterValue::Location)
+}
+
 fn nth_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("nth", reader)?;
     let space0 = one_or_more_spaces(reader)?;
-    let n = natural(reader)?;
+    let n = integer(reader)?;
     Ok(FilterValue::Nth { space0, n })
 }
 
@@ -181,12 +201,26 @@ fn regex_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
 fn replace_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("replace", reader)?;
     let space0 = one_or_more_spaces(reader)?;
-    let old_value = regex_value(reader)?;
+    let old_value = quoted_template(reader).map_err(|e| e.to_non_recoverable())?;
     let space1 = one_or_more_spaces(reader)?;
     let new_value = quoted_template(reader).map_err(|e| e.to_non_recoverable())?;
     Ok(FilterValue::Replace {
         space0,
         old_value,
+        space1,
+        new_value,
+    })
+}
+
+fn replace_regex_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("replaceRegex", reader)?;
+    let space0 = one_or_more_spaces(reader)?;
+    let pattern = regex_value(reader)?;
+    let space1 = one_or_more_spaces(reader)?;
+    let new_value = quoted_template(reader).map_err(|e| e.to_non_recoverable())?;
+    Ok(FilterValue::ReplaceRegex {
+        space0,
+        pattern,
         space1,
         new_value,
     })
@@ -209,6 +243,11 @@ fn to_date_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
 fn to_float_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
     try_literal("toFloat", reader)?;
     Ok(FilterValue::ToFloat)
+}
+
+fn to_hex_filter(reader: &mut Reader) -> ParseResult<FilterValue> {
+    try_literal("toHex", reader)?;
+    Ok(FilterValue::ToHex)
 }
 
 fn to_int_filter(reader: &mut Reader) -> ParseResult<FilterValue> {

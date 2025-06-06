@@ -1,3 +1,4 @@
+use chrono::Utc;
 /*
  * Hurl (https://hurl.dev)
  * Copyright (C) 2025 Orange
@@ -125,6 +126,7 @@ fn eval_query_cookie(
     attribute: &Option<CookieAttribute>,
     variables: &VariableSet,
 ) -> QueryResult {
+    let query_source_info = name.source_info;
     let name = eval_template(name, variables)?;
     match response.get_cookie(&name) {
         None => Ok(None),
@@ -134,7 +136,7 @@ fn eval_query_cookie(
             } else {
                 CookieAttributeName::Value("Value".to_string())
             };
-            Ok(eval_cookie_attribute_name(attribute_name, cookie))
+            eval_cookie_attribute_name(attribute_name, cookie, query_source_info)
         }
     }
 }
@@ -402,52 +404,72 @@ fn eval_ip(response: &http::Response) -> QueryResult {
 
 /// Evaluates the redirects within a list of HTTP `responses`
 fn eval_redirects(responses: &[&http::Response]) -> QueryResult {
-    let mut values: Vec<Value> = responses
-        .iter()
-        .map(|r| Value::HttpResponse(HttpResponse::new(r.url.clone(), r.status)))
-        .collect();
-    // `responses` is the chain list of response triggers by following redirection. We want to only keep
-    // "redirected" HTTP response so we drop the last, not-redirected, response.
-    values.pop();
+    let mut it = responses.iter().peekable();
+    let mut values: Vec<Value> = vec![];
+    while let Some(r) = it.next() {
+        // We peek the next response in the response chain to use the next URL response
+        // as the current response location. The URLs' response chain has already been resolved
+        // we don't need to reconstruct the location from response headers.
+        let location = it.peek().map(|r| r.url.clone());
+        // We're only interested to redirection:
+        if location.is_some() {
+            let response = Value::HttpResponse(HttpResponse::new(location, r.status));
+            values.push(response);
+        }
+    }
     Ok(Some(Value::List(values)))
 }
 
 fn eval_cookie_attribute_name(
     cookie_attribute_name: CookieAttributeName,
     cookie: http::ResponseCookie,
-) -> Option<Value> {
+    query_source_info: SourceInfo,
+) -> QueryResult {
     match cookie_attribute_name {
-        CookieAttributeName::Value(_) => Some(Value::String(cookie.value)),
+        CookieAttributeName::Value(_) => Ok(Some(Value::String(cookie.value))),
         CookieAttributeName::Expires(_) => {
             if let Some(s) = cookie.expires() {
-                match chrono::DateTime::parse_from_rfc2822(s.as_str()) {
-                    Ok(v) => Some(Value::Date(v.with_timezone(&chrono::Utc))),
-                    Err(_) => todo!(),
+                if let Ok(v) = chrono::DateTime::parse_from_rfc2822(s.as_str()) {
+                    Ok(Some(Value::Date(v.with_timezone(&chrono::Utc))))
+
+                // support format with dash such as Wed, 13-Jan-2021 22:23:01 GMT
+                // TODO: search for for other possible date format used in the wild
+                } else if let Ok(v) = chrono::NaiveDateTime::parse_from_str(
+                    s.as_str(),
+                    "%a, %d-%b-%Y %H:%M:%S%.3f GMT",
+                ) {
+                    Ok(Some(Value::Date(v.and_local_timezone(Utc).unwrap())))
+                } else {
+                    Err(RunnerError::new(
+                        query_source_info,
+                        RunnerErrorKind::Http(http::HttpError::CouldNotParseCookieExpires(s)),
+                        true,
+                    ))
                 }
             } else {
-                None
+                Ok(None)
             }
         }
         CookieAttributeName::MaxAge(_) => {
-            cookie.max_age().map(|v| Value::Number(Number::Integer(v)))
+            Ok(cookie.max_age().map(|v| Value::Number(Number::Integer(v))))
         }
-        CookieAttributeName::Domain(_) => cookie.domain().map(Value::String),
-        CookieAttributeName::Path(_) => cookie.path().map(Value::String),
+        CookieAttributeName::Domain(_) => Ok(cookie.domain().map(Value::String)),
+        CookieAttributeName::Path(_) => Ok(cookie.path().map(Value::String)),
         CookieAttributeName::Secure(_) => {
             if cookie.has_secure() {
-                Some(Value::Unit)
+                Ok(Some(Value::Unit))
             } else {
-                None
+                Ok(None)
             }
         }
         CookieAttributeName::HttpOnly(_) => {
             if cookie.has_httponly() {
-                Some(Value::Unit)
+                Ok(Some(Value::Unit))
             } else {
-                None
+                Ok(None)
             }
         }
-        CookieAttributeName::SameSite(_) => cookie.samesite().map(Value::String),
+        CookieAttributeName::SameSite(_) => Ok(cookie.samesite().map(Value::String)),
     }
 }
 
@@ -951,35 +973,53 @@ pub mod tests {
                 },
             ],
         };
+        let query_source_info = SourceInfo::new(Pos::new(0, 0), Pos::new(0, 0));
+
         assert_eq!(
-            eval_cookie_attribute_name(CookieAttributeName::Value("_".to_string()), cookie.clone())
-                .unwrap(),
+            eval_cookie_attribute_name(
+                CookieAttributeName::Value("_".to_string()),
+                cookie.clone(),
+                query_source_info
+            )
+            .unwrap()
+            .unwrap(),
             Value::String("DQAAAKEaem_vYg".to_string())
         );
         assert_eq!(
             eval_cookie_attribute_name(
                 CookieAttributeName::Domain("_".to_string()),
                 cookie.clone(),
-            ),
+                query_source_info
+            )
+            .unwrap(),
             None
         );
         assert_eq!(
-            eval_cookie_attribute_name(CookieAttributeName::Path("_".to_string()), cookie.clone())
-                .unwrap(),
+            eval_cookie_attribute_name(
+                CookieAttributeName::Path("_".to_string()),
+                cookie.clone(),
+                query_source_info
+            )
+            .unwrap()
+            .unwrap(),
             Value::String("/accounts".to_string())
         );
         assert_eq!(
             eval_cookie_attribute_name(
                 CookieAttributeName::MaxAge("_".to_string()),
                 cookie.clone(),
-            ),
+                query_source_info
+            )
+            .unwrap(),
             None
         );
         assert_eq!(
             eval_cookie_attribute_name(
                 CookieAttributeName::Expires("_".to_string()),
                 cookie.clone(),
+                query_source_info
             )
+            .unwrap()
             .unwrap(),
             Value::Date(
                 chrono::DateTime::parse_from_rfc2822("Wed, 13 Jan 2021 22:23:01 GMT")
@@ -991,7 +1031,9 @@ pub mod tests {
             eval_cookie_attribute_name(
                 CookieAttributeName::Secure("_".to_string()),
                 cookie.clone(),
+                query_source_info
             )
+            .unwrap()
             .unwrap(),
             Value::Unit
         );
@@ -999,13 +1041,47 @@ pub mod tests {
             eval_cookie_attribute_name(
                 CookieAttributeName::HttpOnly("_".to_string()),
                 cookie.clone(),
+                query_source_info
             )
+            .unwrap()
             .unwrap(),
             Value::Unit
         );
         assert_eq!(
-            eval_cookie_attribute_name(CookieAttributeName::SameSite("_".to_string()), cookie),
-            None
+            eval_cookie_attribute_name(
+                CookieAttributeName::SameSite("_".to_string()),
+                cookie,
+                query_source_info
+            )
+            .unwrap(),
+            None,
+        );
+    }
+
+    #[test]
+    fn test_eval_cookie_attribute_expires_error() {
+        let cookie = http::ResponseCookie {
+            name: "cookie1".to_string(),
+            value: "value1".to_string(),
+            attributes: vec![http::CookieAttribute {
+                name: "Expires".to_string(),
+                value: Some("???".to_string()),
+            }],
+        };
+        let query_source_info = SourceInfo::new(Pos::new(5, 1), Pos::new(5, 20));
+        let error = eval_cookie_attribute_name(
+            CookieAttributeName::Expires("_".to_string()),
+            cookie.clone(),
+            query_source_info,
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.source_info,
+            SourceInfo::new(Pos::new(5, 1), Pos::new(5, 20))
+        );
+        assert_eq!(
+            error.kind,
+            RunnerErrorKind::Http(HttpError::CouldNotParseCookieExpires("???".to_string()))
         );
     }
 

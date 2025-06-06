@@ -117,7 +117,7 @@ impl Client {
                 }
             };
 
-            let redirect_method = redirect_method(status, request_spec.method);
+            let redirect_method = redirect_method(status, &request_spec.method);
             let mut headers = request_spec.headers;
 
             // When following redirection, we filter `AUTHORIZATION` header unless explicitly told
@@ -127,12 +127,28 @@ impl Client {
                 headers.retain(|h| !h.name_eq(AUTHORIZATION));
                 options.user = None;
             }
-            request_spec = RequestSpec {
-                method: redirect_method,
-                url: redirect_url,
-                headers,
-                ..Default::default()
-            };
+
+            // If the request method has changed due to redirection, the body is dropped from the
+            // request, otherwise we keep it. We follow libcurl implementation <https://curl.se/libcurl/c/CURLOPT_FOLLOWLOCATION.html>:
+            //
+            // > When libcurl switches method to GET, it then uses that method without sending any
+            // > request body. If it does not change the method, it sends the subsequent request the
+            // > same way as the previous one; including the request body if one was provided.
+            if redirect_method != request_spec.method {
+                request_spec = RequestSpec {
+                    method: redirect_method,
+                    url: redirect_url,
+                    headers,
+                    ..Default::default()
+                };
+            } else {
+                request_spec = RequestSpec {
+                    method: redirect_method,
+                    url: redirect_url,
+                    headers,
+                    ..request_spec
+                };
+            }
         }
         Ok(calls)
     }
@@ -441,6 +457,9 @@ impl Client {
         if let Some(max_send_speed) = options.max_send_speed {
             self.handle.max_send_speed(max_send_speed.0)?;
         }
+        if let Some(pinned_pub_key) = &options.pinned_pub_key {
+            self.handle.pinned_public_key(pinned_pub_key)?;
+        }
 
         self.set_ssl_options(options.ssl_no_revoke)?;
 
@@ -462,7 +481,7 @@ impl Client {
             .iter()
             .map(|h| h.as_str())
             .collect::<Vec<&str>>();
-        let headers = &request_spec.headers.aggregate_raw_headers(&options_headers);
+        let headers = &request_spec.headers.with_raw_headers(&options_headers);
         self.set_headers(
             headers,
             request_spec.implicit_content_type.as_deref(),
@@ -793,13 +812,13 @@ impl Client {
 }
 
 /// Returns the method used for redirecting a request/response with `response_status`.
-fn redirect_method(response_status: u32, original_method: Method) -> Method {
+fn redirect_method(response_status: u32, original_method: &Method) -> Method {
     // This replicates curl's behavior
     match response_status {
         301..=303 => Method("GET".to_string()),
         // Could be only 307 and 308, but curl does this for all 3xx
         // codes not converted to GET above.
-        _ => original_method,
+        _ => original_method.clone(),
     }
 }
 
@@ -1074,7 +1093,7 @@ mod tests {
         ];
         for (status, original, redirected) in data {
             assert_eq!(
-                redirect_method(status, Method(original.to_string())),
+                redirect_method(status, &Method(original.to_string())),
                 Method(redirected.to_string())
             );
         }

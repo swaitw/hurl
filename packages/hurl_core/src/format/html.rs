@@ -19,12 +19,12 @@ use std::fmt::Display;
 
 use crate::ast::{
     Assert, Base64, Body, BooleanOption, Bytes, Capture, CertificateAttributeName, Comment, Cookie,
-    CookieAttribute, CookiePath, CountOption, DurationOption, Entry, EntryOption, File, FileParam,
-    FileValue, Filter, FilterValue, Hex, HurlFile, JsonValue, KeyValue, LineTerminator, Method,
-    MultilineString, MultipartParam, NaturalOption, OptionKind, Placeholder, Predicate,
-    PredicateFunc, PredicateFuncValue, PredicateValue, Query, QueryValue, Regex, RegexValue,
-    Request, Response, Section, SectionValue, Status, Template, VariableDefinition, VariableValue,
-    Version, Whitespace,
+    CookieAttribute, CookiePath, CountOption, DurationOption, Entry, EntryOption, File,
+    FilenameParam, FilenameValue, Filter, FilterValue, Hex, HurlFile, JsonValue, KeyValue,
+    LineTerminator, Method, MultilineString, MultipartParam, NaturalOption, OptionKind,
+    Placeholder, Predicate, PredicateFunc, PredicateFuncValue, PredicateValue, Query, QueryValue,
+    Regex, RegexValue, Request, Response, Section, SectionValue, Status, Template,
+    VariableDefinition, VariableValue, Version, Whitespace,
 };
 use crate::typing::{Count, ToSource};
 
@@ -112,7 +112,7 @@ impl HtmlFormatter {
     }
 
     fn fmt_entry(&mut self, entry: &Entry) {
-        self.fmt_span_open("hurl-entry");
+        self.fmt_span_open("entry");
         self.fmt_request(&entry.request);
         if let Some(response) = &entry.response {
             self.fmt_response(response);
@@ -123,13 +123,11 @@ impl HtmlFormatter {
     fn fmt_request(&mut self, request: &Request) {
         self.fmt_span_open("request");
         self.fmt_lts(&request.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&request.space0);
         self.fmt_method(&request.method);
         self.fmt_space(&request.space1);
         let url = escape_xml(request.url.to_source().as_str());
         self.fmt_span("url", &url);
-        self.fmt_span_close();
         self.fmt_lt(&request.line_terminator0);
         request.headers.iter().for_each(|h| self.fmt_kv(h));
         request.sections.iter().for_each(|s| self.fmt_section(s));
@@ -142,12 +140,10 @@ impl HtmlFormatter {
     fn fmt_response(&mut self, response: &Response) {
         self.fmt_span_open("response");
         self.fmt_lts(&response.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&response.space0);
         self.fmt_version(&response.version);
         self.fmt_space(&response.space1);
         self.fmt_status(&response.status);
-        self.fmt_span_close();
         self.fmt_lt(&response.line_terminator0);
         response.headers.iter().for_each(|h| self.fmt_kv(h));
         response.sections.iter().for_each(|s| self.fmt_section(s));
@@ -172,10 +168,8 @@ impl HtmlFormatter {
     fn fmt_section(&mut self, section: &Section) {
         self.fmt_lts(&section.line_terminators);
         self.fmt_space(&section.space0);
-        self.fmt_span_open("line");
         let name = format!("[{}]", section.identifier());
         self.fmt_span("section-header", &name);
-        self.fmt_span_close();
         self.fmt_lt(&section.line_terminator0);
         self.fmt_section_value(&section.value);
     }
@@ -203,20 +197,17 @@ impl HtmlFormatter {
 
     fn fmt_kv(&mut self, kv: &KeyValue) {
         self.fmt_lts(&kv.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&kv.space0);
         self.fmt_template(&kv.key);
         self.fmt_space(&kv.space1);
         self.buffer.push(':');
         self.fmt_space(&kv.space2);
         self.fmt_template(&kv.value);
-        self.fmt_span_close();
         self.fmt_lt(&kv.line_terminator0);
     }
 
     fn fmt_entry_option(&mut self, option: &EntryOption) {
         self.fmt_lts(&option.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&option.space0);
         self.fmt_string(option.kind.identifier());
         self.fmt_space(&option.space1);
@@ -243,24 +234,25 @@ impl HtmlFormatter {
             OptionKind::IpV6(value) => self.fmt_bool_option(value),
             OptionKind::LimitRate(value) => self.fmt_natural_option(value),
             OptionKind::MaxRedirect(value) => self.fmt_count_option(value),
+            OptionKind::MaxTime(value) => self.fmt_duration_option(value),
             OptionKind::NetRc(value) => self.fmt_bool_option(value),
             OptionKind::NetRcFile(filename) => self.fmt_filename(filename),
             OptionKind::NetRcOptional(value) => self.fmt_bool_option(value),
             OptionKind::Output(filename) => self.fmt_filename(filename),
             OptionKind::PathAsIs(value) => self.fmt_bool_option(value),
+            OptionKind::PinnedPublicKey(value) => self.fmt_template(value),
             OptionKind::Proxy(value) => self.fmt_template(value),
             OptionKind::Repeat(value) => self.fmt_count_option(value),
             OptionKind::Resolve(value) => self.fmt_template(value),
             OptionKind::Retry(value) => self.fmt_count_option(value),
             OptionKind::RetryInterval(value) => self.fmt_duration_option(value),
             OptionKind::Skip(value) => self.fmt_bool_option(value),
-            OptionKind::UnixSocket(value) => self.fmt_template(value),
+            OptionKind::UnixSocket(value) => self.fmt_filename(value),
             OptionKind::User(value) => self.fmt_template(value),
             OptionKind::Variable(value) => self.fmt_variable_definition(value),
             OptionKind::Verbose(value) => self.fmt_bool_option(value),
             OptionKind::VeryVerbose(value) => self.fmt_bool_option(value),
         };
-        self.fmt_span_close();
         self.fmt_lt(&option.line_terminator0);
     }
 
@@ -298,24 +290,22 @@ impl HtmlFormatter {
     fn fmt_multipart_param(&mut self, param: &MultipartParam) {
         match param {
             MultipartParam::Param(param) => self.fmt_kv(param),
-            MultipartParam::FileParam(param) => self.fmt_file_param(param),
+            MultipartParam::FilenameParam(param) => self.fmt_file_param(param),
         };
     }
 
-    fn fmt_file_param(&mut self, param: &FileParam) {
+    fn fmt_file_param(&mut self, param: &FilenameParam) {
         self.fmt_lts(&param.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&param.space0);
         self.fmt_template(&param.key);
         self.fmt_space(&param.space1);
         self.buffer.push(':');
         self.fmt_space(&param.space2);
         self.fmt_file_value(&param.value);
-        self.fmt_span_close();
         self.fmt_lt(&param.line_terminator0);
     }
 
-    fn fmt_file_value(&mut self, file_value: &FileValue) {
+    fn fmt_file_value(&mut self, file_value: &FilenameValue) {
         self.buffer.push_str("file,");
         self.fmt_space(&file_value.space0);
         self.fmt_filename(&file_value.filename);
@@ -336,20 +326,17 @@ impl HtmlFormatter {
 
     fn fmt_cookie(&mut self, cookie: &Cookie) {
         self.fmt_lts(&cookie.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&cookie.space0);
         self.fmt_template(&cookie.name);
         self.fmt_space(&cookie.space1);
         self.buffer.push(':');
         self.fmt_space(&cookie.space2);
         self.fmt_template(&cookie.value);
-        self.fmt_span_close();
         self.fmt_lt(&cookie.line_terminator0);
     }
 
     fn fmt_capture(&mut self, capture: &Capture) {
         self.fmt_lts(&capture.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&capture.space0);
         self.fmt_template(&capture.name);
         self.fmt_space(&capture.space1);
@@ -364,7 +351,6 @@ impl HtmlFormatter {
         if capture.redact {
             self.fmt_string("redact");
         }
-        self.fmt_span_close();
         self.fmt_lt(&capture.line_terminator0);
     }
 
@@ -456,7 +442,6 @@ impl HtmlFormatter {
 
     fn fmt_assert(&mut self, assert: &Assert) {
         self.fmt_lts(&assert.line_terminators);
-        self.fmt_span_open("line");
         self.fmt_space(&assert.space0);
         self.fmt_query(&assert.query);
         for (space, filter) in assert.filters.iter() {
@@ -465,7 +450,6 @@ impl HtmlFormatter {
         }
         self.fmt_space(&assert.space1);
         self.fmt_predicate(&assert.predicate);
-        self.fmt_span_close();
         self.fmt_lt(&assert.line_terminator0);
     }
 
@@ -549,7 +533,7 @@ impl HtmlFormatter {
     fn fmt_predicate_value(&mut self, predicate_value: &PredicateValue) {
         match predicate_value {
             PredicateValue::String(value) => self.fmt_template(value),
-            PredicateValue::MultilineString(value) => self.fmt_multiline_string(value, false),
+            PredicateValue::MultilineString(value) => self.fmt_multiline_string(value),
             PredicateValue::Number(value) => self.fmt_number(value.to_source()),
             PredicateValue::Bool(value) => self.fmt_bool(*value),
             PredicateValue::File(value) => self.fmt_file(value),
@@ -561,69 +545,40 @@ impl HtmlFormatter {
         };
     }
 
-    fn fmt_multiline_string(&mut self, multiline_string: &MultilineString, as_body: bool) {
+    fn fmt_multiline_string(&mut self, multiline_string: &MultilineString) {
         let body = multiline_string.to_source();
-        let mut body = format_lines(body.as_str(), true);
-        if !as_body {
-            // A multiline AST element spans multiple line. When used as an assert, the AST element in
-            // in the middle of the current line:
-            //
-            // ~~~
-            // GET https://foo.com
-            // HTTP 200
-            // [Asserts]
-            // body == ```
-            // line1
-            // line2
-            // ```
-            // ~~~
-            //
-            // We don't want the multiline AST to begin a new `<span clas="line">`
-            // element so we split the multiline AST element in a list of single-line "multiline"
-            // elements. This way, each new multiline element is wrapped in a single line.
-            // NOTE: this still feels hacky to me, I'm not sure that we should add span for lines, it
-            // intermixes an AST hierarchical view and a line oriented HTML view.
-            body = body
-                .strip_prefix("<span class=\"line\">")
-                .unwrap()
-                .strip_suffix("</span>")
-                .unwrap()
-                .to_string();
-        }
-        self.buffer.push_str(&body);
+        let body = escape_xml(body.as_str());
+        self.fmt_span("multiline", &body);
     }
 
     fn fmt_body(&mut self, body: &Body) {
         self.fmt_lts(&body.line_terminators);
         self.fmt_space(&body.space0);
         self.fmt_bytes(&body.value);
-        self.fmt_lt(&body.line_terminator0);
+        let lt = &body.line_terminator0;
+        self.fmt_space(&lt.space0);
+        if let Some(v) = &lt.comment {
+            self.fmt_comment(v);
+        }
+        self.buffer.push_str(lt.newline.as_str());
     }
 
     fn fmt_bytes(&mut self, bytes: &Bytes) {
         match bytes {
             Bytes::Base64(value) => {
-                self.fmt_span_open("line");
                 self.fmt_base64(value);
-                self.fmt_span_close();
             }
             Bytes::File(value) => {
-                self.fmt_span_open("line");
                 self.fmt_file(value);
-                self.fmt_span_close();
             }
             Bytes::Hex(value) => {
-                self.fmt_span_open("line");
                 self.fmt_hex(value);
-                self.fmt_span_close();
             }
             Bytes::OnelineString(value) => {
-                self.fmt_span_open("line");
                 self.fmt_template(value);
-                self.fmt_span_close();
             }
             Bytes::Json(value) => self.fmt_json_value(value),
-            Bytes::MultilineString(value) => self.fmt_multiline_string(value, true),
+            Bytes::MultilineString(value) => self.fmt_multiline_string(value),
             Bytes::Xml(value) => self.fmt_xml(value),
         }
     }
@@ -669,12 +624,13 @@ impl HtmlFormatter {
     }
 
     fn fmt_xml(&mut self, value: &str) {
-        let xml = format_lines(value, false);
-        self.fmt_span("xml", &xml);
+        let value = escape_xml(value);
+        self.fmt_span("xml", &value);
     }
 
     fn fmt_json_value(&mut self, json_value: &JsonValue) {
-        let json = format_lines(json_value.to_source().as_str(), false);
+        let json = json_value.to_source();
+        let json = escape_xml(json.as_str());
         self.fmt_span("json", &json);
     }
 
@@ -770,7 +726,18 @@ impl HtmlFormatter {
                 new_value,
             } => {
                 self.fmt_space(space0);
-                self.fmt_regex_value(old_value);
+                self.fmt_template(old_value);
+                self.fmt_space(space1);
+                self.fmt_template(new_value);
+            }
+            FilterValue::ReplaceRegex {
+                space0,
+                pattern,
+                space1,
+                new_value,
+            } => {
+                self.fmt_space(space0);
+                self.fmt_regex_value(pattern);
                 self.fmt_space(space1);
                 self.fmt_template(new_value);
             }
@@ -797,9 +764,13 @@ impl HtmlFormatter {
             | FilterValue::Count
             | FilterValue::DaysAfterNow
             | FilterValue::DaysBeforeNow
+            | FilterValue::First
             | FilterValue::HtmlEscape
             | FilterValue::HtmlUnescape
+            | FilterValue::Last
+            | FilterValue::Location
             | FilterValue::ToFloat
+            | FilterValue::ToHex
             | FilterValue::ToInt
             | FilterValue::ToString
             | FilterValue::UrlDecode
@@ -808,13 +779,14 @@ impl HtmlFormatter {
     }
 
     fn fmt_lts(&mut self, line_terminators: &[LineTerminator]) {
-        for line_terminator in line_terminators {
-            self.fmt_span_open("line");
-            if line_terminator.newline.value.is_empty() {
-                self.buffer.push_str("<br />");
+        for lt in line_terminators {
+            self.fmt_space(&lt.space0);
+            if let Some(v) = &lt.comment {
+                self.fmt_comment(v);
             }
-            self.fmt_span_close();
-            self.fmt_lt(line_terminator);
+            if !lt.newline.value.is_empty() {
+                self.buffer.push_str(lt.newline.as_str());
+            }
         }
     }
 }
@@ -827,22 +799,6 @@ fn escape_xml(s: &str) -> String {
 
 fn encode_html(s: &str) -> String {
     s.replace('>', "&gt;").replace('<', "&lt;")
-}
-
-fn format_lines(s: &str, use_multiline_class: bool) -> String {
-    regex::Regex::new(r"\n|\r\n")
-        .unwrap()
-        .split(s)
-        .map(|l| {
-            let text = escape_xml(l);
-            if use_multiline_class {
-                format!("<span class=\"line\"><span class=\"multiline\">{text}</span></span>")
-            } else {
-                format!("<span class=\"line\">{text}</span>")
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n")
 }
 
 #[cfg(test)]
@@ -886,69 +842,10 @@ mod tests {
             kind,
         };
         let mut fmt = HtmlFormatter::new();
-        fmt.fmt_multiline_string(&multiline_string, true);
+        fmt.fmt_multiline_string(&multiline_string);
         assert_eq!(
             fmt.buffer,
-            "<span class=\"line\">\
-                <span class=\"multiline\">```</span>\
-            </span>\n\
-            <span class=\"line\">\
-                <span class=\"multiline\">line1</span>\
-            </span>\n\
-            <span class=\"line\">\
-                <span class=\"multiline\">line2</span>\
-            </span>\n\
-            <span class=\"line\">\
-                <span class=\"multiline\">```</span>\
-            </span>"
-        );
-
-        let mut fmt = HtmlFormatter::new();
-        fmt.fmt_multiline_string(&multiline_string, false);
-        assert_eq!(
-            fmt.buffer,
-            "<span class=\"multiline\">```</span>\
-        </span>\n\
-        <span class=\"line\">\
-            <span class=\"multiline\">line1</span>\
-        </span>\n\
-        <span class=\"line\">\
-            <span class=\"multiline\">line2</span>\
-        </span>\n\
-        <span class=\"line\">\
-            <span class=\"multiline\">```</span>"
-        );
-    }
-
-    #[test]
-    fn test_multilines() {
-        assert_eq!(
-            format_lines("{\n   \"id\": 1\n}", false),
-            "<span class=\"line\">{</span>\n\
-            <span class=\"line\">   \"id\": 1</span>\n\
-            <span class=\"line\">}</span>"
-        );
-        assert_eq!(
-            format_lines("{\n   \"id\": 1\n}", true),
-            "<span class=\"line\"><span class=\"multiline\">{</span></span>\n\
-            <span class=\"line\"><span class=\"multiline\">   \"id\": 1</span></span>\n\
-            <span class=\"line\"><span class=\"multiline\">}</span></span>"
-        );
-
-        assert_eq!(
-            format_lines(
-                "<?xml version=\"1.0\"?>\n\
-            <drink>café</drink>",
-                false
-            ),
-            "<span class=\"line\">&lt;?xml version=\"1.0\"?&gt;</span>\n\
-            <span class=\"line\">&lt;drink&gt;café&lt;/drink&gt;</span>"
-        );
-
-        assert_eq!(
-            format_lines("Hello\n", false),
-            "<span class=\"line\">Hello</span>\n\
-            <span class=\"line\"></span>"
+            "<span class=\"multiline\">```\nline1\nline2\n```</span>"
         );
     }
 
@@ -974,14 +871,7 @@ mod tests {
             }],
         };
         fmt.fmt_json_value(&value);
-        assert_eq!(
-            fmt.buffer,
-            "<span class=\"json\">\
-                <span class=\"line\">{</span>\n\
-                <span class=\"line\">   \"id\": 1</span>\n\
-                <span class=\"line\">}</span>\
-            </span>"
-        );
+        assert_eq!(fmt.buffer, "<span class=\"json\">{\n   \"id\": 1\n}</span>");
     }
 
     #[test]
@@ -996,10 +886,7 @@ mod tests {
             SourceInfo::new(Pos::new(0, 0), Pos::new(0, 0)),
         ));
         fmt.fmt_json_value(&value);
-        assert_eq!(
-            fmt.buffer,
-            "<span class=\"json\"><span class=\"line\">\"\\n\"</span></span>"
-        );
+        assert_eq!(fmt.buffer, "<span class=\"json\">\"\\n\"</span>");
     }
 
     #[test]
@@ -1009,7 +896,7 @@ mod tests {
         fmt.fmt_xml(value);
         assert_eq!(
             fmt.buffer,
-            "<span class=\"xml\"><span class=\"line\">&lt;?xml version=\"1.0\"?&gt;</span>\n<span class=\"line\">&lt;drink&gt;café&lt;/drink&gt;</span></span>"
+            "<span class=\"xml\">&lt;?xml version=\"1.0\"?&gt;\n&lt;drink&gt;café&lt;/drink&gt;</span>"
         );
     }
 
