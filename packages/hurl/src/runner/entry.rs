@@ -52,7 +52,7 @@ pub fn run(
         let immediate_logs =
             matches!(logger.stderr.mode(), WriteMode::Immediate) && logger.verbosity.is_some();
         if immediate_logs {
-            let redacted = response_spec.captures().iter().find(|c| c.redact);
+            let redacted = response_spec.captures().iter().find(|c| c.redacted);
             if let Some(redacted) = redacted {
                 let source_info = redacted.name.source_info;
                 let error =
@@ -227,7 +227,7 @@ pub fn run(
 fn asserts_to_errors(asserts: &[AssertResult]) -> Vec<RunnerError> {
     asserts
         .iter()
-        .filter_map(|assert| assert.error())
+        .filter_map(|assert| assert.to_runner_error())
         .map(
             |RunnerError {
                  source_info,
@@ -263,6 +263,7 @@ impl ClientOptions {
             netrc_file: runner_options.netrc_file.clone(),
             netrc_optional: runner_options.netrc_optional,
             path_as_is: runner_options.path_as_is,
+            pinned_pub_key: runner_options.pinned_pub_key.clone(),
             proxy: runner_options.proxy.clone(),
             no_proxy: runner_options.no_proxy.clone(),
             insecure: runner_options.insecure,

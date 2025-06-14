@@ -19,11 +19,12 @@ use std::fmt;
 
 use crate::ast::option::EntryOption;
 use crate::ast::primitive::{
-    Bytes, KeyValue, LineTerminator, SourceInfo, Template, Whitespace, U64,
+    Bytes, KeyValue, LineTerminator, SourceInfo, Template, Whitespace, I64,
 };
 use crate::ast::section::{
     Assert, Capture, Cookie, MultipartParam, RegexValue, Section, SectionValue,
 };
+use crate::typing::{SourceString, ToSource};
 
 /// Represents Hurl AST root node.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -208,6 +209,12 @@ impl fmt::Display for Method {
     }
 }
 
+impl ToSource for Method {
+    fn to_source(&self) -> SourceString {
+        self.0.to_source()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Version {
     pub value: VersionValue,
@@ -290,6 +297,7 @@ pub enum FilterValue {
         space0: Whitespace,
         encoding: Template,
     },
+    First,
     Format {
         space0: Whitespace,
         fmt: Template,
@@ -300,9 +308,11 @@ pub enum FilterValue {
         space0: Whitespace,
         expr: Template,
     },
+    Last,
+    Location,
     Nth {
         space0: Whitespace,
-        n: U64,
+        n: I64,
     },
     Regex {
         space0: Whitespace,
@@ -310,7 +320,13 @@ pub enum FilterValue {
     },
     Replace {
         space0: Whitespace,
-        old_value: RegexValue,
+        old_value: Template,
+        space1: Whitespace,
+        new_value: Template,
+    },
+    ReplaceRegex {
+        space0: Whitespace,
+        pattern: RegexValue,
         space1: Whitespace,
         new_value: Template,
     },
@@ -323,6 +339,7 @@ pub enum FilterValue {
         fmt: Template,
     },
     ToFloat,
+    ToHex,
     ToInt,
     ToString,
     UrlDecode,
@@ -349,16 +366,21 @@ impl FilterValue {
             FilterValue::DaysAfterNow => "daysAfterNow",
             FilterValue::DaysBeforeNow => "daysBeforeNow",
             FilterValue::Decode { .. } => "decode",
+            FilterValue::First => "first",
             FilterValue::Format { .. } => "format",
             FilterValue::HtmlEscape => "htmlEscape",
             FilterValue::HtmlUnescape => "htmlUnescape",
             FilterValue::JsonPath { .. } => "jsonpath",
+            FilterValue::Last => "last",
+            FilterValue::Location => "location",
             FilterValue::Nth { .. } => "nth",
             FilterValue::Regex { .. } => "regex",
             FilterValue::Replace { .. } => "replace",
+            FilterValue::ReplaceRegex { .. } => "replaceRegex",
             FilterValue::Split { .. } => "split",
             FilterValue::ToDate { .. } => "toDate",
             FilterValue::ToFloat => "toFloat",
+            FilterValue::ToHex => "toHex",
             FilterValue::ToInt => "toInt",
             FilterValue::ToString => "toString",
             FilterValue::UrlDecode => "urlDecode",

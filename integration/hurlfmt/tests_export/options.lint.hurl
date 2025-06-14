@@ -23,11 +23,13 @@ ipv4: false
 ipv6: false
 limit-rate: 1000
 max-redirs: 10
+max-time: 100s
 netrc: false
 netrc-file: netrcfile
 netrc-optional: false
 output: output.txt
 path-as-is: false
+pinnedpubkey: pinnedpubkeyfile
 proxy: http://proxy.example
 repeat: -1
 repeat: 5
@@ -72,11 +74,13 @@ ipv4: {{ipv4}}
 ipv6: {{ipv6}}
 limit-rate: {{limit-rate}}
 max-redirs: {{max-redirs}}
+max-time: {{max-time}}
 netrc: {{netrc}}
 netrc-file: {{netrc-file}}
 netrc-optional: {{netrc-optional}}
 output: {{output}}
 path-as-is: {{path-as-is}}
+pinnedpubkey: {{pinnedpubkey}}
 proxy: {{proxy}}
 repeat: {{repeat}}
 resolve: {{resolve}}

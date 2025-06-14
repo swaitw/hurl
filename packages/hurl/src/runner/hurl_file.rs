@@ -39,6 +39,8 @@ use crate::util::term::{Stderr, Stdout, WriteMode};
 /// etc...) can be read in the [`HurlResult`] `success` field. If `content` is not syntactically
 /// correct, a parsing error is returned. This is the only possible way for this function to fail.
 ///
+/// The caller must ensure that `content` do not start with [BOM](https://en.wikipedia.org/wiki/Byte_order_mark).
+///
 /// `filename` indicates an optional file source, used when displaying errors.
 ///
 /// # Example
@@ -547,6 +549,9 @@ fn log_errors(
 
     if logger.error_format == ErrorFormat::Long {
         if let Some(Call { response, .. }) = entry_result.calls.last() {
+            logger.info_curl_cmd(&entry_result.curl_cmd.to_string());
+            logger.info("");
+
             response.log_info_all(logger);
         }
     }

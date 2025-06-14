@@ -18,7 +18,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use hurl_core::ast::{FileParam, FileValue, KeyValue, MultipartParam};
+use hurl_core::ast::{FilenameParam, FilenameValue, KeyValue, MultipartParam};
 
 use crate::http;
 use crate::runner::body::eval_file;
@@ -27,6 +27,16 @@ use crate::runner::template::eval_template;
 use crate::runner::VariableSet;
 use crate::util::path::ContextDir;
 
+/// Evaluates a multipart param AST to a runtime multipart param, given a set of `variables` and
+/// a [`ContextDir`] instance.
+///
+/// ```hurl
+/// POST https://example.org/upload
+/// [Multipart]
+/// field1: value1
+/// field2: file,example.txt;
+/// field3: file,example.zip; application/zip
+/// ```
 pub fn eval_multipart_param(
     multipart_param: &MultipartParam,
     variables: &VariableSet,
@@ -38,22 +48,22 @@ pub fn eval_multipart_param(
             let value = eval_template(value, variables)?;
             Ok(http::MultipartParam::Param(http::Param { name, value }))
         }
-        MultipartParam::FileParam(param) => {
+        MultipartParam::FilenameParam(param) => {
             let file_param = eval_file_param(param, context_dir, variables)?;
             Ok(http::MultipartParam::FileParam(file_param))
         }
     }
 }
 
-pub fn eval_file_param(
-    file_param: &FileParam,
+fn eval_file_param(
+    filename_param: &FilenameParam,
     context_dir: &ContextDir,
     variables: &VariableSet,
 ) -> Result<http::FileParam, RunnerError> {
-    let name = eval_template(&file_param.key, variables)?;
-    let filename = eval_template(&file_param.value.filename, variables)?;
-    let data = eval_file(&file_param.value.filename, variables, context_dir)?;
-    let content_type = file_value_content_type(&file_param.value, variables)?;
+    let name = eval_template(&filename_param.key, variables)?;
+    let filename = eval_template(&filename_param.value.filename, variables)?;
+    let data = eval_file(&filename_param.value.filename, variables, context_dir)?;
+    let content_type = eval_content_type(&filename_param.value, variables)?;
     Ok(http::FileParam {
         name,
         filename,
@@ -62,8 +72,9 @@ pub fn eval_file_param(
     })
 }
 
-pub fn file_value_content_type(
-    file_value: &FileValue,
+/// Returns the evaluated content type for this file param value, given a set of `variables`.
+fn eval_content_type(
+    file_value: &FilenameValue,
     variables: &VariableSet,
 ) -> Result<String, RunnerError> {
     let value = match &file_value.content_type {
@@ -102,7 +113,7 @@ mod tests {
     use hurl_core::reader::Pos;
     use hurl_core::typing::ToSource;
 
-    pub fn whitespace() -> Whitespace {
+    fn whitespace() -> Whitespace {
         Whitespace {
             value: String::from(" "),
             source_info: SourceInfo::new(Pos::new(0, 0), Pos::new(0, 0)),
@@ -110,18 +121,19 @@ mod tests {
     }
 
     #[test]
-    pub fn test_eval_file_param() {
+    fn test_eval_file_param() {
+        // upload1: hello.txt;
         let line_terminator = LineTerminator {
             space0: whitespace(),
             comment: None,
             newline: whitespace(),
         };
-        let current_dir = std::env::current_dir().unwrap();
+        let current_dir = Path::new("/home");
         let file_root = Path::new("tests");
-        let context_dir = ContextDir::new(current_dir.as_path(), file_root);
+        let context_dir = ContextDir::new(current_dir, file_root);
         let variables = VariableSet::default();
         let param = eval_file_param(
-            &FileParam {
+            &FilenameParam {
                 line_terminators: vec![],
                 space0: whitespace(),
                 key: Template::new(
@@ -134,7 +146,7 @@ mod tests {
                 ),
                 space1: whitespace(),
                 space2: whitespace(),
-                value: FileValue {
+                value: FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,
@@ -166,16 +178,19 @@ mod tests {
     }
 
     #[test]
-    pub fn test_file_value_content_type() {
+    fn test_file_value_content_type() {
         let mut variables = VariableSet::default();
         variables.insert(
             "ct".to_string(),
             Value::String("application/json".to_string()),
         );
 
+        // ```hurl
+        // foo: hello.txt;
+        // ```
         assert_eq!(
-            file_value_content_type(
-                &FileValue {
+            eval_content_type(
+                &FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,
@@ -195,9 +210,12 @@ mod tests {
             "text/plain".to_string()
         );
 
+        // ```hurl
+        // bar: hello.html;
+        // ```
         assert_eq!(
-            file_value_content_type(
-                &FileValue {
+            eval_content_type(
+                &FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,
@@ -217,9 +235,12 @@ mod tests {
             "text/html".to_string()
         );
 
+        // ```hurl
+        // bar: hello.txt; text/html
+        // ```
         assert_eq!(
-            file_value_content_type(
-                &FileValue {
+            eval_content_type(
+                &FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,
@@ -246,9 +267,12 @@ mod tests {
             "text/html".to_string()
         );
 
+        // ```hurl
+        // baz: hello;
+        // ```
         assert_eq!(
-            file_value_content_type(
-                &FileValue {
+            eval_content_type(
+                &FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,
@@ -268,9 +292,12 @@ mod tests {
             "application/octet-stream".to_string()
         );
 
+        // ```hurl
+        // quz: hello.txt; {{ct}}
+        // ```
         assert_eq!(
-            file_value_content_type(
-                &FileValue {
+            eval_content_type(
+                &FilenameValue {
                     space0: whitespace(),
                     filename: Template::new(
                         None,

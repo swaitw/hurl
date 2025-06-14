@@ -19,7 +19,7 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use hurl_core::ast::{
     Assert, Base64, Body, BooleanOption, Bytes, Capture, CertificateAttributeName, Comment, Cookie,
-    CountOption, DurationOption, Entry, EntryOption, File, FileParam, Filter, FilterValue, Hex,
+    CountOption, DurationOption, Entry, EntryOption, File, FilenameParam, Filter, FilterValue, Hex,
     HurlFile, JsonListElement, JsonValue, KeyValue, MultilineString, MultilineStringKind,
     MultipartParam, NaturalOption, OptionKind, Placeholder, Predicate, PredicateFuncValue,
     PredicateValue, Query, QueryValue, Regex, RegexValue, Request, Response, StatusValue,
@@ -270,12 +270,12 @@ impl ToJson for MultipartParam {
     fn to_json(&self) -> JValue {
         match self {
             MultipartParam::Param(param) => param.to_json(),
-            MultipartParam::FileParam(param) => param.to_json(),
+            MultipartParam::FilenameParam(param) => param.to_json(),
         }
     }
 }
 
-impl ToJson for FileParam {
+impl ToJson for FilenameParam {
     fn to_json(&self) -> JValue {
         let mut attributes = vec![
             ("name".to_string(), JValue::String(self.key.to_string())),
@@ -327,11 +327,13 @@ impl ToJson for EntryOption {
             OptionKind::IpV6(value) => value.to_json(),
             OptionKind::LimitRate(value) => value.to_json(),
             OptionKind::MaxRedirect(value) => value.to_json(),
+            OptionKind::MaxTime(value) => value.to_json(),
             OptionKind::NetRc(value) => value.to_json(),
             OptionKind::NetRcFile(filename) => JValue::String(filename.to_string()),
             OptionKind::NetRcOptional(value) => value.to_json(),
             OptionKind::Output(filename) => JValue::String(filename.to_string()),
             OptionKind::PathAsIs(value) => value.to_json(),
+            OptionKind::PinnedPublicKey(value) => JValue::String(value.to_string()),
             OptionKind::Proxy(value) => JValue::String(value.to_string()),
             OptionKind::Repeat(value) => value.to_json(),
             OptionKind::Resolve(value) => JValue::String(value.to_string()),
@@ -428,7 +430,7 @@ impl ToJson for Capture {
             let filters = JValue::List(self.filters.iter().map(|(_, f)| f.to_json()).collect());
             attributes.push(("filters".to_string(), filters));
         }
-        if self.redact {
+        if self.redacted {
             attributes.push(("redact".to_string(), JValue::Boolean(true)));
         }
         JValue::Object(attributes)
@@ -664,7 +666,19 @@ impl ToJson for FilterValue {
                 new_value,
                 ..
             } => {
-                attributes.push(("old_value".to_string(), old_value.to_json()));
+                attributes.push((
+                    "old_value".to_string(),
+                    JValue::String(old_value.to_string()),
+                ));
+                attributes.push((
+                    "new_value".to_string(),
+                    JValue::String(new_value.to_string()),
+                ));
+            }
+            FilterValue::ReplaceRegex {
+                pattern, new_value, ..
+            } => {
+                attributes.push(("pattern".to_string(), pattern.to_json()));
                 attributes.push((
                     "new_value".to_string(),
                     JValue::String(new_value.to_string()),
@@ -884,7 +898,7 @@ pub mod tests {
             query: header_query(),
             filters: vec![],
             space3: whitespace(),
-            redact: false,
+            redacted: false,
             line_terminator0: line_terminator(),
         }
     }

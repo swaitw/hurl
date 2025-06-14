@@ -365,8 +365,6 @@ You can specify time units in the maximum time expression. Set Hurl to use a max
 
 See also [`--connect-timeout`](#connect-timeout).
 
-This is a cli-only option.
-
 ### -n, --netrc {#netrc}
 
 Scan the .netrc file in the user's home directory for the username and password.
@@ -420,6 +418,16 @@ This is a cli-only option.
 ### --path-as-is {#path-as-is}
 
 Tell Hurl to not handle sequences of /../ or /./ in the given URL path. Normally Hurl will squash or merge them according to standards but with this option set you tell it not to do that.
+
+### --pinnedpubkey <HASHES> {#pinnedpubkey}
+
+When negotiating a TLS or SSL connection, the server sends a certificate indicating its identity. A public key is extracted from this certificate and if it does not exactly match the public key provided to this option, Hurl aborts the connection before sending or receiving any data.
+
+### --progress-bar {#progress-bar}
+
+Display a progress bar in test mode. The progress bar is displayed only in interactive TTYs. This option forces the progress bar to be displayed even in non-interactive TTYs.
+
+This is a cli-only option.
 
 ### -x, --proxy <[PROTOCOL://]HOST[:PORT]> {#proxy}
 

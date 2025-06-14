@@ -1,4 +1,4 @@
-.TH hurl 1 "24 Mar 2025" "hurl 6.2.0-SNAPSHOT" " Hurl Manual"
+.TH hurl 1 "13 Jun 2025" "hurl 7.0.0-SNAPSHOT" " Hurl Manual"
 .SH NAME
 
 hurl - run and test HTTP requests.
@@ -346,8 +346,6 @@ You can specify time units in the maximum time expression. Set Hurl to use a max
 
 See also \fI--connect-timeout\fP.
 
-This is a cli-only option.
-
 .IP "-n, --netrc "
 
 Scan the .netrc file in the user's home directory for the username and password.
@@ -401,6 +399,16 @@ This is a cli-only option.
 .IP "--path-as-is "
 
 Tell Hurl to not handle sequences of /../ or /./ in the given URL path. Normally Hurl will squash or merge them according to standards but with this option set you tell it not to do that.
+
+.IP "--pinnedpubkey <HASHES> "
+
+When negotiating a TLS or SSL connection, the server sends a certificate indicating its identity. A public key is extracted from this certificate and if it does not exactly match the public key provided to this option, Hurl aborts the connection before sending or receiving any data.
+
+.IP "--progress-bar "
+
+Display a progress bar in test mode. The progress bar is displayed only in interactive TTYs. This option forces the progress bar to be displayed even in non-interactive TTYs.
+
+This is a cli-only option.
 
 .IP "-x, --proxy <[PROTOCOL://]HOST[:PORT]> "
 

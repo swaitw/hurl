@@ -9,7 +9,6 @@ pacman -Syu --noconfirm \
     expect \
     openssl \
     python3 \
-    python-lxml \
     icu \
     base-devel \
     libxml2 \
@@ -20,6 +19,8 @@ pacman -Syu --noconfirm \
 sudo squid -k shutdown || true
 sudo rm -v /dev/shm/squid*.shm >/dev/null 2>&1 || true
 
+# libxml crate >= 0.3.4 uses bindgen
+pacman -Syu --noconfirm clang
+
 # Temporary install to patch a python3/pip crash
 pacman -Syu --noconfirm expat
-

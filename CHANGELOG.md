@@ -1,3 +1,63 @@
+[7.0.0 (TBD)](https://github.com/Orange-OpenSource/hurl/blob/master/CHANGELOG.md#7.0.0)
+========================================================================================================================
+
+Thanks to
+[@ecolinet](https://github.com/ecolinet),
+[@theoforger](https://github.com/theoforger),
+[@Muntaner](https://github.com/Muntaner),
+[@ashishajr](https://github.com/ashishajr),
+[@patkujawa-wf](https://github.com/patkujawa-wf),
+[@niklasweimann](https://github.com/niklasweimann),
+[@alanbondarun](https://github.com/alanbondarun),
+[@benkio](https://github.com/benkio),
+[@dhth](https://github.com/dhth),
+[@verigak](https://github.com/verigak),
+[@lambrospetrou](https://github.com/lambrospetrou),
+[@nfj25](https://github.com/nfj25),
+[@nwellnhof](https://github.com/nwellnhof),
+[@YannickAlex07](https://github.com/YannickAlex07),
+
+Breaking Changes:
+
+* Add replaceRegex filter and fix replace filter to not take regex [#4018](https://github.com/Orange-OpenSource/hurl/issues/4018)
+
+
+Enhancements:
+
+* Add query for HTTP redirects [#922](https://github.com/Orange-OpenSource/hurl/issues/922)
+* Add urlQueryParam filter [#2199](https://github.com/Orange-OpenSource/hurl/issues/2199)
+* Add option to configure max-time per request [#3162](https://github.com/Orange-OpenSource/hurl/issues/3162)
+* Add date comparison predicates [#3480](https://github.com/Orange-OpenSource/hurl/issues/3480)
+* Add pinnedpubkey cli option [#3563](https://github.com/Orange-OpenSource/hurl/issues/3563)
+* Add base64 url safe encode and decode filters [#3840](https://github.com/Orange-OpenSource/hurl/issues/3840)
+* Show hurl --help with color [#3882](https://github.com/Orange-OpenSource/hurl/issues/3882)
+* Add toHex filter [#3963](https://github.com/Orange-OpenSource/hurl/issues/3963)
+* Add first and last filters [#3998](https://github.com/Orange-OpenSource/hurl/issues/3998)
+* Remove hex crate dependency [#4011](https://github.com/Orange-OpenSource/hurl/issues/4011)
+* Add support for negative values for nth filter [#4050](https://github.com/Orange-OpenSource/hurl/issues/4050)
+* Add option to configure pinnedpubkey per request [#4084](https://github.com/Orange-OpenSource/hurl/issues/4084)
+
+
+Bugs Fixed:
+
+* Fix incorrect curl command for POST redirect [#2797](https://github.com/Orange-OpenSource/hurl/issues/2797)
+* Fix hurlfmt to disallow invalid header argument in curl command [#3668](https://github.com/Orange-OpenSource/hurl/issues/3668)
+* Parse verbose flag in curl command [#3760](https://github.com/Orange-OpenSource/hurl/issues/3760)
+* Keep secret value forever, even if a secret variable override an existing one [#3898](https://github.com/Orange-OpenSource/hurl/issues/3898)
+* Parse cookie Expires date attribute with '-' [#3956](https://github.com/Orange-OpenSource/hurl/issues/3956)
+* Replace deprecated libxml2 initGenericErrorDefaultFunc with xmlSetGenericErrorFunc [#3975](https://github.com/Orange-OpenSource/hurl/issues/3975)
+* HTML report: fix span for lines in comment. [#4002](https://github.com/Orange-OpenSource/hurl/issues/4002)
+* Fix HTML closing tag for line with trailing comment [#4017](https://github.com/Orange-OpenSource/hurl/issues/4017)
+* Add replaceRegex filter and fix replace filter to not take regex [#4018](https://github.com/Orange-OpenSource/hurl/issues/4018)
+* Fix request body during redirections [#4073](https://github.com/Orange-OpenSource/hurl/issues/4073)
+* Fix "variables" token in GraphQL HTML export [#4117](https://github.com/Orange-OpenSource/hurl/issues/4117)
+
+
+Security Issues Fixed:
+
+* Fix JavaScript injection in HTML report through regex literal [#4125](https://github.com/Orange-OpenSource/hurl/issues/4125)
+
+
 [6.1.1 (2025-03-19)](https://github.com/Orange-OpenSource/hurl/blob/master/CHANGELOG.md#6.1.1)
 ========================================================================================================================
 

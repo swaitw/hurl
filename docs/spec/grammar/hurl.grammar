@@ -96,15 +96,15 @@ options-section:
 
 key-value: key-string ":" value-string
 
-multipart-form-data-param: file-param | key-value
+multipart-form-data-param: filename-param | key-value
 
-file-param :
+filename-param:
   lt*
-  key-string ":" file-value lt
+  key-string ":" filename-value lt
 
-file-value: "file," filename ";" (file-contenttype)?
+filename-value: "file," filename ";" (filename-content-type)?
 
-file-contenttype: value-string
+filename-content-type: value-string
 
 capture:
   lt*
@@ -136,11 +136,13 @@ option:
   | ipv6-option
   | limit-rate-option
   | max-redirs-option
+  | max-time-option
   | netrc-option
   | netrc-file-option
   | netrc-optional-option
   | output-option
   | path-as-is-option
+  | pinned-public-key-option
   | proxy-option
   | repeat-option
   | resolve-option
@@ -194,6 +196,8 @@ limit-rate-option: "limit-rate" ":" integer-option lt
 
 max-redirs-option: "max-redirs" ":" integer-option lt
 
+max-time-option: "max-time" ":" integer-option lt
+
 netrc-option: "netrc" ":" boolean-option lt
 
 netrc-file-option: "netrc-file" ":" value-string lt
@@ -203,6 +207,8 @@ netrc-optional-option: "netrc-optional" ":" boolean-option lt
 output-option: "output" ":" value-string lt
 
 path-as-is-option: "path-as-is" ":" boolean-option lt
+
+pinned-public-key-option: "pinnedpubkey" ":" value-string lt
 
 proxy-option: "proxy" ":" value-string lt
 
@@ -552,16 +558,21 @@ filter:
   | days-after-now-filter
   | days-before-now-filter
   | decode-filter
+  | first-filter
   | format-filter
   | html-escape-filter
   | html-unescape-filter
   | jsonpath-filter
+  | last-filter
+  | location-filter
   | nth-filter
   | regex-filter
   | replace-filter
+  | replace-regex-filter
   | split-filter
   | to-date-filter
   | to-float-filter
+  | to-hex-filter
   | to-int-filter
   | to-string-filter
   | url-decode-filter
@@ -585,7 +596,9 @@ days-before-now-filter: "daysBeforeNow"
 
 decode-filter: "decode"
 
-format-filter: "format"
+first-filter: "first" 
+
+format-filter: "format" sp quoted-string
 
 html-escape-filter: "htmlEscape"
 
@@ -593,17 +606,25 @@ html-unescape-filter: "htmlUnescape"
 
 jsonpath-filter: "jsonpath" sp quoted-string
 
+last-filter: "last"
+
+location-filter: "location"
+
 nth-filter: "nth" sp integer
 
 regex-filter: "regex" sp (quoted-string | regex)
 
-replace-filter: "replace" sp (quoted-string | regex) sp quoted-string
+replace-filter: "replace" sp quoted-string sp quoted-string
+
+replace-regex-filter: "replaceRegex" sp (quoted-string | regex) sp quoted-string
 
 split-filter: "split" sp quoted-string
 
 to-date-filter: "toDate" sp quoted-string
 
 to-float-filter: "toFloat"
+
+to-hex-filter: "toHex"
 
 to-int-filter: "toInt"
 
